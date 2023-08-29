@@ -33,7 +33,7 @@ services:
     networks:
       - testing_net
     depends_on:
-      - server  
+      - server
 
 networks:
   testing_net:
