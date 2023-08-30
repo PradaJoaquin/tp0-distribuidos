@@ -1,12 +1,11 @@
 import sys
 
 def create_file(clients):
-    file = open("docker-compose-dev.yaml", "w")
-    file.write("version: '3.9'\n")
-    file.write("name: tp0\n")
-    write_services(file, clients)
-    write_networks(file)
-    file.close()
+    with open("docker-compose-dev.yaml", "w") as file:
+        file.write("version: '3.9'\n")
+        file.write("name: tp0\n")
+        write_services(file, clients)
+        write_networks(file)
 
 def write_services(file, clients):
     file.write("services:\n")
@@ -49,12 +48,14 @@ def write_networks(file):
     file.write("        - subnet: 172.25.125.0/24\n")
 
 def main():
-    #arguments
     if len(sys.argv) != 2:
         print("Please especify how many clients you want to create: python3 multiple_clients_compose.py <number_of_clients>")
         sys.exit(1)
-    
-    clients = int(sys.argv[1])
+    try:
+        clients = int(sys.argv[1])
+    except ValueError:
+        print("Please especify how many clients you want to create with a number: python3 multiple_clients_compose.py <number_of_clients>")
+        sys.exit(1)
     create_file(clients)
 
 if __name__ == '__main__':
