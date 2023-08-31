@@ -1,4 +1,4 @@
-# Ejercicio 2
+# Ejercicio 3
 
 ## Ejecución
 - Ejecutar `make docker-compose-up` en la terminal para que este levantado el server.
