@@ -1,4 +1,4 @@
-if [ $(echo "test" | nc server 12345) = "test" ]; then
+if [ $(echo "test" | nc -q 1 server 12345) = "test" ]; then
     echo "Netcat test passed"
 else
     echo "Netcat test failed"
