@@ -10,6 +10,9 @@ services:
       - LOGGING_LEVEL=DEBUG
     networks:
       - testing_net
+    volumes:
+      - ./server/config.ini:/config.ini
+
 
   client1:
     container_name: client1
@@ -18,10 +21,17 @@ services:
     environment:
       - CLI_ID=1
       - CLI_LOG_LEVEL=DEBUG
+      - CLI_NOMBRE=Juan pablo
+      - CLI_APELLIDO=Sancho
+      - CLI_DOCUMENTO=36674459
+      - CLI_NACIMIENTO=1990-05-14
+      - CLI_NUMERO=1000
     networks:
       - testing_net
     depends_on:
       - server
+    volumes:
+      - ./client/config.yaml:/config.yaml
 
   client2:
     container_name: client2
@@ -30,10 +40,17 @@ services:
     environment:
       - CLI_ID=2
       - CLI_LOG_LEVEL=DEBUG
+      - CLI_NOMBRE=Mauricio
+      - CLI_APELLIDO=Ponche
+      - CLI_DOCUMENTO=41924361
+      - CLI_NACIMIENTO=2000-01-23
+      - CLI_NUMERO=4231
     networks:
       - testing_net
     depends_on:
       - server
+    volumes:
+      - ./client/config.yaml:/config.yaml
 
   client3:
     container_name: client3
@@ -42,10 +59,17 @@ services:
     environment:
       - CLI_ID=3
       - CLI_LOG_LEVEL=DEBUG
+      - CLI_NOMBRE=Lionel Andres
+      - CLI_APELLIDO=Messi
+      - CLI_DOCUMENTO=35654839
+      - CLI_NACIMIENTO=1987-06-24
+      - CLI_NUMERO=10
     networks:
       - testing_net
     depends_on:
       - server
+    volumes:
+      - ./client/config.yaml:/config.yaml
 
   client4:
     container_name: client4
@@ -54,10 +78,17 @@ services:
     environment:
       - CLI_ID=4
       - CLI_LOG_LEVEL=DEBUG
+      - CLI_NOMBRE=Ramiro
+      - CLI_APELLIDO=Pachino
+      - CLI_DOCUMENTO=42914245
+      - CLI_NACIMIENTO=2000-09-23
+      - CLI_NUMERO=9876
     networks:
       - testing_net
     depends_on:
       - server
+    volumes:
+      - ./client/config.yaml:/config.yaml
 
   client5:
     container_name: client5
@@ -66,10 +97,17 @@ services:
     environment:
       - CLI_ID=5
       - CLI_LOG_LEVEL=DEBUG
+      - CLI_NOMBRE=Santiago Lionel
+      - CLI_APELLIDO=Lorca
+      - CLI_DOCUMENTO=30904465
+      - CLI_NACIMIENTO=1999-03-17
+      - CLI_NUMERO=7547
     networks:
       - testing_net
     depends_on:
       - server
+    volumes:
+      - ./client/config.yaml:/config.yaml
 
 networks:
   testing_net:
