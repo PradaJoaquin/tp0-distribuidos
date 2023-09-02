@@ -1,5 +1,6 @@
-# Ejercicio 2
+# Ejercicio 4
 
 ## Ejecución
-- Ejecutar `make docker-compose-up` en la terminal para que este levantado el server.
-- Ejecutar `bash netcat_test.sh` en la terminal y si el resultado es *Netcat test passed* el servidor esta funcionando.
+- Ejecutar `make docker-compose-up` en la terminal para levantar server y clientes.
+- Ejecutar `make docker-compose-logs` en otra terminal para empezar a ver los logs.
+- Ejecutar `make docker-compose-down` en la primera terminal mientras se ejecutan los clientes y servidor y observar los logs para ver el graceful shutdown.
