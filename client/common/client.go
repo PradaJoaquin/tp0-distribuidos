@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"net"
 	"time"
+	"os"
+	"os/signal"
+	"syscall"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -21,13 +24,19 @@ type ClientConfig struct {
 type Client struct {
 	config ClientConfig
 	conn   net.Conn
+	shutdown chan os.Signal
 }
 
 // NewClient Initializes a new client receiving the configuration
 // as a parameter
 func NewClient(config ClientConfig) *Client {
+	// shutdown is a channel used to receive the SIGTERM signal
+	shutdown := make(chan os.Signal, 1)
+	signal.Notify(shutdown, syscall.SIGTERM)
+
 	client := &Client{
 		config: config,
+		shutdown: shutdown,
 	}
 	return client
 }
@@ -62,6 +71,8 @@ loop:
                 c.config.ID,
             )
 			break loop
+		case <-c.shutdown:
+			shutdown(c)
 		default:
 		}
 
@@ -96,4 +107,12 @@ loop:
 	}
 
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
+}
+
+func shutdown(c *Client) {
+	log.Infof("action: shutdown | result: in_progress | client_id: %v", c.config.ID)
+	c.conn.Close()
+	log.Infof("action: close_connection | result: success | client_id: %v", c.config.ID)
+	log.Infof("action: shutdown | result: success | client_id: %v", c.config.ID)
+	os.Exit(0)
 }
