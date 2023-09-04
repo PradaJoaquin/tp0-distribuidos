@@ -1,8 +1,6 @@
 package common
 
 import (
-	"bufio"
-	"fmt"
 	"net"
 	"os"
 	"os/signal"
@@ -20,16 +18,26 @@ type ClientConfig struct {
 	LoopPeriod    time.Duration
 }
 
+// ClientBet used by the client
+type ClientBet struct {
+	Nombre     string
+	Apellido   string
+	Documento  string
+	Nacimiento string
+	Numero     int
+}
+
 // Client Entity that encapsulates how
 type Client struct {
 	config   ClientConfig
 	conn     net.Conn
 	shutdown chan os.Signal
+	bet      ClientBet
 }
 
 // NewClient Initializes a new client receiving the configuration
 // as a parameter
-func NewClient(config ClientConfig) *Client {
+func NewClient(config ClientConfig, bet ClientBet) *Client {
 	// shutdown is a channel used to receive the SIGTERM signal
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGTERM)
@@ -37,6 +45,7 @@ func NewClient(config ClientConfig) *Client {
 	client := &Client{
 		config:   config,
 		shutdown: shutdown,
+		bet:      bet,
 	}
 	return client
 }
@@ -59,9 +68,6 @@ func (c *Client) createClientSocket() error {
 
 // StartClientLoop Send messages to the client until some time threshold is met
 func (c *Client) StartClientLoop() {
-	// autoincremental msgID to identify every message sent
-	msgID := 1
-
 loop:
 	// Send messages if the loopLapse threshold has not been surpassed
 	for timeout := time.After(c.config.LoopLapse); ; {
@@ -78,30 +84,19 @@ loop:
 
 		// Create the connection the server in every loop iteration. Send an
 		c.createClientSocket()
-
-		// TODO: Modify the send to avoid short-write
-		fmt.Fprintf(
-			c.conn,
-			"[CLIENT %v] Message N°%v\n",
-			c.config.ID,
-			msgID,
-		)
-		msg, err := bufio.NewReader(c.conn).ReadString('\n')
-		msgID++
+		msg, err := sendClientBet(c.config.ID, c.bet, c.conn)
 		c.conn.Close()
-
-		if err != nil {
+		if err != nil || msg.ResponseType == ErrMessage {
 			log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
 				c.config.ID,
 				err,
 			)
 			return
 		}
-		log.Infof("action: receive_message | result: success | client_id: %v | msg: %v",
-			c.config.ID,
-			msg,
-		)
-
+		if msg.ResponseType == AckMessage {
+			log.Infof("action: apuesta_enviada | result: success | dni: %v | numero: %v", c.bet.Documento, c.bet.Numero)
+			break loop
+		}
 		// Wait a time between sending one message and the next one
 		time.Sleep(c.config.LoopPeriod)
 	}
@@ -109,6 +104,7 @@ loop:
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
 }
 
+// shutdown Closes the connection and exits the program
 func shutdown(c *Client) {
 	log.Infof("action: shutdown | result: in_progress | client_id: %v", c.config.ID)
 	c.conn.Close()
