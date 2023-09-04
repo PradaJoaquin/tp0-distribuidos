@@ -4,10 +4,10 @@ import (
 	"bufio"
 	"fmt"
 	"net"
-	"time"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -22,8 +22,8 @@ type ClientConfig struct {
 
 // Client Entity that encapsulates how
 type Client struct {
-	config ClientConfig
-	conn   net.Conn
+	config   ClientConfig
+	conn     net.Conn
 	shutdown chan os.Signal
 }
 
@@ -35,7 +35,7 @@ func NewClient(config ClientConfig) *Client {
 	signal.Notify(shutdown, syscall.SIGTERM)
 
 	client := &Client{
-		config: config,
+		config:   config,
 		shutdown: shutdown,
 	}
 	return client
@@ -48,7 +48,7 @@ func (c *Client) createClientSocket() error {
 	conn, err := net.Dial("tcp", c.config.ServerAddress)
 	if err != nil {
 		log.Fatalf(
-	        "action: connect | result: fail | client_id: %v | error: %v",
+			"action: connect | result: fail | client_id: %v | error: %v",
 			c.config.ID,
 			err,
 		)
@@ -67,9 +67,9 @@ loop:
 	for timeout := time.After(c.config.LoopLapse); ; {
 		select {
 		case <-timeout:
-	        log.Infof("action: timeout_detected | result: success | client_id: %v",
-                c.config.ID,
-            )
+			log.Infof("action: timeout_detected | result: success | client_id: %v",
+				c.config.ID,
+			)
 			break loop
 		case <-c.shutdown:
 			shutdown(c)
@@ -92,15 +92,15 @@ loop:
 
 		if err != nil {
 			log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
-                c.config.ID,
+				c.config.ID,
 				err,
 			)
 			return
 		}
 		log.Infof("action: receive_message | result: success | client_id: %v | msg: %v",
-            c.config.ID,
-            msg,
-        )
+			c.config.ID,
+			msg,
+		)
 
 		// Wait a time between sending one message and the next one
 		time.Sleep(c.config.LoopPeriod)
@@ -109,6 +109,7 @@ loop:
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
 }
 
+// shutdown Closes the connection and exits the program
 func shutdown(c *Client) {
 	log.Infof("action: shutdown | result: in_progress | client_id: %v", c.config.ID)
 	c.conn.Close()
