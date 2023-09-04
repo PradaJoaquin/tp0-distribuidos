@@ -49,7 +49,11 @@ class Server:
             communication.send_ack_response(client_sock)
             logging.info(f"action: receive_message | result: success | bet_agency: {client_bet.agency} | bet_number: {client_bet.number}")
         except OSError as e:
-            logging.error("action: receive_message | result: fail | error: {e}")
+            logging.error(f"action: receive_message | result: fail | error: {e}")
+            communication.send_err_response(client_sock)
+        except ValueError as e:
+            logging.error(f"action: receive_message | result: fail | error: {e}")
+            communication.send_err_response(client_sock)
         finally:
             client_sock.close()
 
