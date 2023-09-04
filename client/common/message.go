@@ -26,8 +26,9 @@ func NewBetMessage(senderID string, bet ClientBet) BetMessage {
 }
 
 // BetMessageToBytes Converts a bet message to a byte array to be sent through the socket
+//
+// Protocol: <sender_id>:<nombre>,<apellido>,<documento>,<nacimiento>,<numero>\n
 func BetMessageToBytes(betMessage BetMessage) []byte {
-	// Protocol: <sender_id>:<nombre>,<apellido>,<documento>,<nacimiento>,<numero>\n
 	return []byte(
 		fmt.Sprintf(
 			"%s:%s,%s,%s,%s,%d\n",
@@ -42,6 +43,8 @@ func BetMessageToBytes(betMessage BetMessage) []byte {
 }
 
 // ResponseMessageFromBytes Converts a byte array to a response message received through the socket
+//
+// Protocol: <sender_id>:<response_type>\n
 func ResponseMessageFromBytes(bytes []byte) ResponseMessage {
 	var senderID string
 	var responseType int

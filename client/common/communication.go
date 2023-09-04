@@ -23,7 +23,7 @@ func receiveResponse(conn net.Conn) (ResponseMessage, error) {
 	bytes := make([]byte, 1024)
 	bytesReceived := 0
 	// Read until a newline is received to prevent short reads
-	for bytesReceived == 0 || bytes[bytesReceived-1] == '\n' {
+	for bytesReceived == 0 || bytes[bytesReceived-1] == byte('\n') {
 		bytes := make([]byte, 1024)
 		newBytesReceived, err := conn.Read(bytes)
 		if err != nil {

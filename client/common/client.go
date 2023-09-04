@@ -84,8 +84,11 @@ loop:
 
 		// Create the connection the server in every loop iteration. Send an
 		c.createClientSocket()
+
 		msg, err := sendClientBet(c.config.ID, c.bet, c.conn)
+
 		c.conn.Close()
+
 		if err != nil || msg.ResponseType == ErrMessage {
 			log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
 				c.config.ID,
