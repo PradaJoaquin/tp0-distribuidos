@@ -40,14 +40,14 @@ class Server:
         """
         try:
             # Receive bet from client
-            client_bet = communication.receive_client_bet(client_sock)
+            client_bets = communication.receive_client_bets(client_sock)
             
             # Store bet in database
-            utils.store_bets([client_bet])
+            utils.store_bets(client_bets)
             
             # Send ack response
             communication.send_ack_response(client_sock)
-            logging.info(f"action: receive_message | result: success | bet_agency: {client_bet.agency} | bet_number: {client_bet.number}")
+            logging.info(f"action: receive_message | result: success")
         except OSError as e:
             logging.error(f"action: receive_message | result: fail | error: {e}")
             communication.send_err_response(client_sock)

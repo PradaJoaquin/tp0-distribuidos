@@ -16,6 +16,7 @@ type ClientConfig struct {
 	ServerAddress string
 	LoopLapse     time.Duration
 	LoopPeriod    time.Duration
+	BatchSize     int
 }
 
 // ClientBet used by the client
@@ -32,12 +33,12 @@ type Client struct {
 	config   ClientConfig
 	conn     net.Conn
 	shutdown chan os.Signal
-	bet      ClientBet
+	betsPath string
 }
 
 // NewClient Initializes a new client receiving the configuration
 // as a parameter
-func NewClient(config ClientConfig, bet ClientBet) *Client {
+func NewClient(config ClientConfig, betsPath string) *Client {
 	// shutdown is a channel used to receive the SIGTERM signal
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGTERM)
@@ -45,7 +46,7 @@ func NewClient(config ClientConfig, bet ClientBet) *Client {
 	client := &Client{
 		config:   config,
 		shutdown: shutdown,
-		bet:      bet,
+		betsPath: betsPath,
 	}
 	return client
 }
@@ -68,43 +69,40 @@ func (c *Client) createClientSocket() error {
 
 // StartClientLoop Send messages to the client until some time threshold is met
 func (c *Client) StartClientLoop() {
-loop:
-	// Send messages if the loopLapse threshold has not been surpassed
-	for timeout := time.After(c.config.LoopLapse); ; {
+	betLoader, err := NewBetLoader(c.betsPath, c.config.BatchSize)
+	if err != nil {
+		log.Errorf("action: open_bets_file | result: fail | error: %v", err)
+		return
+	}
+	for betLoader.HasNext() {
 		select {
-		case <-timeout:
-			log.Infof("action: timeout_detected | result: success | client_id: %v",
-				c.config.ID,
-			)
-			break loop
 		case <-c.shutdown:
 			shutdown(c)
 		default:
 		}
-
 		// Create the connection the server in every loop iteration. Send an
 		c.createClientSocket()
 
-		msg, err := sendClientBet(c.config.ID, c.bet, c.conn)
+		bets, err := Next(betLoader)
+		if err != nil {
+			log.Errorf("action: read_bets | result: fail | client_id: %v | error: %v", c.config.ID, err)
+		}
+		response, err := sendClientBetsBatch(c.config.ID, bets, c.conn)
 
 		c.conn.Close()
 
-		if err != nil || msg.ResponseType == ErrMessage {
+		if err != nil || response.ResponseType == ErrMessage {
 			log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
 				c.config.ID,
 				err,
 			)
 			return
 		}
-		if msg.ResponseType == AckMessage {
-			log.Infof("action: apuesta_enviada | result: success | dni: %v | numero: %v", c.bet.Documento, c.bet.Numero)
-			break loop
+		if response.ResponseType == AckMessage {
+			log.Infof("action: batch_de_apuestas_enviada | result: success")
 		}
-		// Wait a time between sending one message and the next one
-		time.Sleep(c.config.LoopPeriod)
 	}
-
-	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
+	log.Infof("action: todas_las_apuestas_enviadas | result: success | client_id: %v", c.config.ID)
 }
 
 // shutdown Closes the connection and exits the program

@@ -1,10 +1,14 @@
 package common
 
-import "net"
+import (
+	"net"
+)
 
-// SendClientBet Sends a client bet to the server and returns the response message
-func sendClientBet(senderID string, bet ClientBet, conn net.Conn) (ResponseMessage, error) {
-	betMessage := NewBetMessage(senderID, bet)
+const BUFFER_SIZE = 8192
+
+// SendClientBets Sends a batch of client bets to the server and returns the response
+func sendClientBetsBatch(senderID string, bets []ClientBet, conn net.Conn) (ResponseMessage, error) {
+	betMessage := NewBetMessage(senderID, bets)
 	bytes := BetMessageToBytes(betMessage)
 
 	bytesSent := 0
@@ -20,16 +24,15 @@ func sendClientBet(senderID string, bet ClientBet, conn net.Conn) (ResponseMessa
 
 // ReceiveResponse Receives a response message from the server
 func receiveResponse(conn net.Conn) (ResponseMessage, error) {
-	bytes := make([]byte, 1024)
+	bytes := make([]byte, BUFFER_SIZE)
 	bytesReceived := 0
 	// Read until a newline is received to prevent short reads
-	for bytesReceived == 0 || bytes[bytesReceived-1] == byte('\n') {
-		bytes := make([]byte, 1024)
-		newBytesReceived, err := conn.Read(bytes)
+	for bytesReceived == 0 || bytes[bytesReceived-1] != byte('\n') {
+		bytesReceivedAux, err := conn.Read(bytes[bytesReceived:])
 		if err != nil {
 			return ResponseMessage{}, err
 		}
-		bytesReceived += newBytesReceived
+		bytesReceived += bytesReceivedAux
 	}
 	return ResponseMessageFromBytes(bytes[:bytesReceived]), nil
 }

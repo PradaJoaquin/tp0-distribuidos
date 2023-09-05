@@ -13,6 +13,9 @@ import (
 	"github.com/7574-sistemas-distribuidos/docker-compose-init/client/common"
 )
 
+// Agency bets path
+const DATA_FILEPATH = "/data"
+
 // InitConfig Function that uses viper library to parse configuration parameters.
 // Viper is configured to read variables from both environment variables and the
 // config file ./config.yaml. Environment variables takes precedence over parameters
@@ -111,16 +114,11 @@ func main() {
 		ID:            v.GetString("id"),
 		LoopLapse:     v.GetDuration("loop.lapse"),
 		LoopPeriod:    v.GetDuration("loop.period"),
+		BatchSize:     v.GetInt("batch.batch_size"),
 	}
 
-	clientBet := common.ClientBet{
-		Nombre:     v.GetString("nombre"),
-		Apellido:   v.GetString("apellido"),
-		Documento:  v.GetString("documento"),
-		Nacimiento: v.GetString("nacimiento"),
-		Numero:     v.GetInt("numero"),
-	}
+	betsPath := DATA_FILEPATH + "/agency-" + v.GetString("id") + ".csv"
 
-	client := common.NewClient(clientConfig, clientBet)
+	client := common.NewClient(clientConfig, betsPath)
 	client.StartClientLoop()
 }
