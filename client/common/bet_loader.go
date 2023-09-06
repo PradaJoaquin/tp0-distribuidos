@@ -13,19 +13,21 @@ import (
 type betLoader struct {
 	reader    *bufio.Reader
 	batchSize int
+	file      *os.File
 }
 
 // Creates a new bet loader, if an error occurs while opening the file the error is returned
 func NewBetLoader(betsPath string, batchSize int) (*betLoader, error) {
 	file, err := os.Open(betsPath)
-	reader := bufio.NewReader(file)
 	if err != nil {
 		log.Errorf("action: open_bets_file | result: fail | error: %v", err)
 		return nil, err
 	}
+	reader := bufio.NewReader(file)
 	return &betLoader{
 		reader:    reader,
 		batchSize: batchSize,
+		file:      file,
 	}, nil
 }
 
@@ -82,4 +84,9 @@ func (b *betLoader) HasNext() bool {
 		return false
 	}
 	return true
+}
+
+// Closes the file, the loader cannot be used after this method is called.
+func (b *betLoader) Close() {
+	b.file.Close()
 }

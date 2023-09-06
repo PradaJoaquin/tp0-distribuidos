@@ -30,10 +30,10 @@ type ClientBet struct {
 
 // Client Entity that encapsulates how
 type Client struct {
-	config   ClientConfig
-	conn     net.Conn
-	shutdown chan os.Signal
-	betsPath string
+	config    ClientConfig
+	conn      net.Conn
+	shutdown  chan os.Signal
+	betLoader *betLoader
 }
 
 // NewClient Initializes a new client receiving the configuration
@@ -43,10 +43,16 @@ func NewClient(config ClientConfig, betsPath string) *Client {
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGTERM)
 
+	betLoader, err := NewBetLoader(betsPath, config.BatchSize)
+	if err != nil {
+		log.Errorf("action: open_bets_file | result: fail | error: %v", err)
+		return nil
+	}
+
 	client := &Client{
-		config:   config,
-		shutdown: shutdown,
-		betsPath: betsPath,
+		config:    config,
+		shutdown:  shutdown,
+		betLoader: betLoader,
 	}
 	return client
 }
@@ -69,12 +75,7 @@ func (c *Client) createClientSocket() error {
 
 // StartClientLoop Send messages to the client until some time threshold is met
 func (c *Client) StartClientLoop() {
-	betLoader, err := NewBetLoader(c.betsPath, c.config.BatchSize)
-	if err != nil {
-		log.Errorf("action: open_bets_file | result: fail | error: %v", err)
-		return
-	}
-	for betLoader.HasNext() {
+	for c.betLoader.HasNext() {
 		select {
 		case <-c.shutdown:
 			shutdown(c)
@@ -83,7 +84,7 @@ func (c *Client) StartClientLoop() {
 		// Create the connection the server in every loop iteration. Send an
 		c.createClientSocket()
 
-		bets, err := Next(betLoader)
+		bets, err := Next(c.betLoader)
 		if err != nil {
 			log.Errorf("action: read_bets | result: fail | client_id: %v | error: %v", c.config.ID, err)
 		}
@@ -99,17 +100,20 @@ func (c *Client) StartClientLoop() {
 			return
 		}
 		if response.ResponseType == AckMessage {
-			log.Infof("action: batch_de_apuestas_enviada | result: success")
+			log.Debugf("action: batch_de_apuestas_enviada | result: success")
 		}
 	}
 	log.Infof("action: todas_las_apuestas_enviadas | result: success | client_id: %v", c.config.ID)
 }
 
-// shutdown Closes the connection and exits the program
+// shutdown Closes the connection and exits the program, closing all the files descriptors.
 func shutdown(c *Client) {
 	log.Infof("action: shutdown | result: in_progress | client_id: %v", c.config.ID)
 	c.conn.Close()
 	log.Infof("action: close_connection | result: success | client_id: %v", c.config.ID)
+	log.Infof("action: close_bets_file | result: in_progress | client_id: %v", c.config.ID)
+	c.betLoader.Close()
+	log.Infof("action: close_bets_file | result: success | client_id: %v", c.config.ID)
 	log.Infof("action: shutdown | result: success | client_id: %v", c.config.ID)
 	os.Exit(0)
 }
