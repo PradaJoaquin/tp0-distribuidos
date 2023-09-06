@@ -62,6 +62,9 @@ func NewClient(config ClientConfig, betsPath string) *Client {
 // is returned
 func (c *Client) createClientSocket() error {
 	conn, err := net.Dial("tcp", c.config.ServerAddress)
+
+	// Set a deadline for the connection, using the loop lapse as a timeout.
+	conn.SetDeadline(time.Now().Add(c.config.LoopLapse))
 	if err != nil {
 		log.Fatalf(
 			"action: connect | result: fail | client_id: %v | error: %v",

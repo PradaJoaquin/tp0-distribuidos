@@ -16,17 +16,20 @@ class Server:
         signal.signal(signal.SIGTERM, self.__stop)
 
 
-    def run(self):
+    def run(self, connection_timeout=0):
         """
         Dummy Server loop
 
         Server that accept a new connections and establishes a
         communication with a client. After client with communucation
         finishes, servers starts to accept new connections again
+
+        To set a timeout for the accept operation, set the connection_timeout parameter
         """
         while self.running:
             try:
                 client_sock = self.__accept_new_connection()
+                client_sock.settimeout(connection_timeout)
                 self.__handle_client_connection(client_sock)
             except OSError:
                 return
