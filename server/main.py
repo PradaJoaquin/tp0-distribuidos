@@ -27,6 +27,7 @@ def initialize_config():
         config_params["listen_backlog"] = int(os.getenv('SERVER_LISTEN_BACKLOG', config["DEFAULT"]["SERVER_LISTEN_BACKLOG"]))
         config_params["logging_level"] = os.getenv('LOGGING_LEVEL', config["DEFAULT"]["LOGGING_LEVEL"])
         config_params["connection_timeout"] = int(os.getenv('CONNECTION_TIMEOUT', config["DEFAULT"]["CONNECTION_TIMEOUT"]))
+        config_params["number_of_clients"] = int(os.getenv('NUMBER_OF_CLIENTS', config["DEFAULT"]["NUMBER_OF_CLIENTS"]))
     except KeyError as e:
         raise KeyError("Key was not found. Error: {} .Aborting server".format(e))
     except ValueError as e:
@@ -50,7 +51,7 @@ def main():
                   f"listen_backlog: {listen_backlog} | logging_level: {logging_level}")
 
     # Initialize server and start server loop
-    server = Server(port, listen_backlog)
+    server = Server(port, listen_backlog, config_params["number_of_clients"])
     server.run(connection_timeout=connection_timeout)
 
 def initialize_log(logging_level):
