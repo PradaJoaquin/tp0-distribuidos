@@ -1,4 +1,4 @@
-# Ejercicio 7
+# Ejercicio 8
 
 ## Paralelismo
 Para este ejercicio pensé en distintas soluciones sobre como lograr la concurrencia/paralelismo.
