@@ -1,4 +1,6 @@
 from enum import Enum
+import logging
+import signal
 import common.utils as utils
 from multiprocessing.connection import Listener
 
@@ -19,21 +21,27 @@ class BetsHandler:
     def __init__(self, address):
         self.address = address
         self.listener = Listener(self.address)
+        self.running = True
+        # Register signal handler for SIGTERM
+        signal.signal(signal.SIGTERM, self.__stop)
 
     def listen(self):
         """
         Listen for bets
         """
-        while True:
-            conn = self.listener.accept()
-            msg = conn.recv()
-            operation = msg[0]
-            if operation == BetsHandlerOperations.StoreBets:
-                self.store_bets(msg[1])
-            elif operation == BetsHandlerOperations.FilterWinners:
-                conn.send(self.filter_winners(msg[1]))
-            elif operation == BetsHandlerOperations.Close:
-                break
+        while self.running == True:
+            try:
+                conn = self.listener.accept()
+                msg = conn.recv()
+                operation = msg[0]
+                if operation == BetsHandlerOperations.StoreBets:
+                    self.store_bets(msg[1])
+                elif operation == BetsHandlerOperations.FilterWinners:
+                    conn.send(self.filter_winners(msg[1]))
+                elif operation == BetsHandlerOperations.Close:
+                    break
+            except OSError:
+                return
         self.listener.close()
 
     def store_bets(self, bets):
@@ -51,3 +59,12 @@ class BetsHandler:
         bets = utils.load_bets()
         winners = [bet for bet in bets if utils.has_won(bet)]
         return [winner for winner in winners if winner.agency == int(client_id)]
+    
+    def __stop(self, signum, frame):
+        """
+        Stop the bets handler
+        """
+        logging.info("action: bets_handler_shutdown | result: in_progress")
+        self.running = False
+        self.listener.close()
+        logging.info("action: bets_handler_shutdown | result: success")

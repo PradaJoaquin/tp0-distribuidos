@@ -1,6 +1,8 @@
 from enum import Enum
+import logging
 import multiprocessing
 from multiprocessing.connection import Listener
+import signal
 
 SERVER_STATE_ADDRESS = ('localhost', 6001)
 
@@ -21,21 +23,27 @@ class ServerState:
         self.total_number_of_clients = number_of_clients
         self.address = address
         self.listener = Listener(self.address)
+        self.running = True
+        # Register signal handler for SIGTERM
+        signal.signal(signal.SIGTERM, self.__stop)
 
     def listen(self):
         """
         Listen for server state operations
         """
-        while True:
-            conn = self.listener.accept()
-            msg = conn.recv()
-            operation = msg[0]
-            if operation == ServerStateOperations.AddClientDone:
-                self.add_client_done(msg[1])
-            elif operation == ServerStateOperations.IsAllClientsDone:
-                conn.send(self.is_all_clients_done())
-            elif operation == ServerStateOperations.Close:
-                break
+        while self.running == True:
+            try:
+                conn = self.listener.accept()
+                msg = conn.recv()
+                operation = msg[0]
+                if operation == ServerStateOperations.AddClientDone:
+                    self.add_client_done(msg[1])
+                elif operation == ServerStateOperations.IsAllClientsDone:
+                    conn.send(self.is_all_clients_done())
+                elif operation == ServerStateOperations.Close:
+                    break
+            except OSError:
+                return
         self.listener.close()
 
     def add_client_done(self, client_id):
@@ -50,3 +58,12 @@ class ServerState:
         """
         result = len(self.clients_done) == self.total_number_of_clients
         return result
+    
+    def __stop(self, signum, frame):
+        """
+        Stop the bets handler
+        """
+        logging.info("action: server_state_shutdown | result: in_progress")
+        self.running = False
+        self.listener.close()
+        logging.info("action: server_state_shutdown | result: success")

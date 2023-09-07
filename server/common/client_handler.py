@@ -1,4 +1,6 @@
 import logging
+import signal
+import socket
 import common.communication as communication
 import common.message as message
 from multiprocessing.connection import Client
@@ -6,25 +8,28 @@ from common.bets_handler import BetsHandlerOperations
 from common.server_state import ServerStateOperations
 
 class ClientHandler:
-    def __init__(self, server_state_address, bets_handler_address):
+    def __init__(self, client_sock, server_state_address, bets_handler_address):
+        self.client_sock = client_sock
         self.server_state_address = server_state_address
         self.bets_handler_address = bets_handler_address
         self.running = True
+        # Register signal handler for SIGTERM
+        signal.signal(signal.SIGTERM, self.__stop)
 
-    def handle_client(self, client_sock):
+    def handle_client(self):
         while self.running == True:
             # Receive message from client
             try:
-                client_message = communication.receive_client_message(client_sock)
-                self.handle_client_message(client_sock, client_message)
+                client_message = communication.receive_client_message(self.client_sock)
+                self.handle_client_message(self.client_sock, client_message)
             except OSError as e:
-                logging.error(f"action: receive_message | result: fail | error: {e}")
-                communication.send_err_response(client_sock)
-                client_sock.close()
+                return
             except ValueError as e:
                 logging.error(f"action: receive_message | result: fail | error: {e}")
-                communication.send_err_response(client_sock)
-                client_sock.close()
+                communication.send_err_response(self.client_sock)
+                self.client_sock.close()
+                self.running = False
+        self.client_sock.close()
 
     def handle_client_message(self, client_sock, client_message):
         if client_message.message_type == message.MessageType.BetMessageType:
@@ -68,5 +73,15 @@ class ClientHandler:
             conn.send([ServerStateOperations.IsAllClientsDone])
             result = conn.recv()
         return result
+    
+    def __stop(self, *args):
+        """
+        Stop server closing the client socket.
+        """
+        logging.info("action: client_handler_shutdown | result: in_progress")
+        self.client_sock.shutdown(socket.SHUT_RDWR)
+        self.client_sock.close()
+        self.running = False
+        logging.info("action: client_handler_shutdown | result: success")
     
     

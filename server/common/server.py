@@ -4,8 +4,7 @@ import signal
 import multiprocessing
 import common.client_handler as client_handler
 from common.bets_handler import BetsHandler, BETS_HANDLER_ADDRESS
-from common.server_state import ServerState
-from common.server_state import SERVER_STATE_ADDRESS
+from common.server_state import ServerState, SERVER_STATE_ADDRESS
 
 class Server:
     def __init__(self, port, listen_backlog, number_of_clients):
@@ -44,8 +43,8 @@ class Server:
                 # Active children call is necessary to avoid zombie processes
                 multiprocessing.active_children()
                 
-                c_handler = client_handler.ClientHandler(SERVER_STATE_ADDRESS, BETS_HANDLER_ADDRESS)
-                multiprocessing.Process(target=c_handler.handle_client, args=(client_sock,)).start()
+                c_handler = client_handler.ClientHandler(client_sock, SERVER_STATE_ADDRESS, BETS_HANDLER_ADDRESS)
+                multiprocessing.Process(target=c_handler.handle_client, args=()).start()
             except OSError:
                 return
 
@@ -72,5 +71,10 @@ class Server:
         self._server_socket.shutdown(socket.SHUT_RDWR)
         self._server_socket.close()
         logging.info("action: server_socket_closed | result: success")
+        logging.info("action: children_processes_shutdown | result: in_progress")
+        active_children = multiprocessing.active_children()
+        for child in active_children:
+            child.terminate()
+        logging.info("action: children_processes_shutdown | result: success")
         logging.info("action: server_shutdown | result: success")
 
