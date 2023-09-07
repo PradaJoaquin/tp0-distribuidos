@@ -79,6 +79,7 @@ func (c *Client) createClientSocket() error {
 
 // StartClientLoop Send messages to the client until some time threshold is met
 func (c *Client) StartClientLoop() {
+	c.createClientSocket()
 	err := begginBatch(c)
 	if err != nil {
 		log.Errorf("action: send_batch | result: fail | client_id: %v | error: %v", c.config.ID, err)
@@ -113,15 +114,11 @@ func begginBatch(c *Client) error {
 		default:
 		}
 
-		c.createClientSocket()
-
 		bets, err := Next(c.betLoader)
 		if err != nil {
 			log.Errorf("action: read_bets | result: fail | client_id: %v | error: %v", c.config.ID, err)
 		}
 		response, err := sendClientBetsBatch(c.config.ID, bets, c.conn)
-
-		c.conn.Close()
 
 		if err != nil || response.MessageType == ErrMessage {
 			log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
@@ -143,12 +140,10 @@ type error interface {
 }
 
 func begginDone(c *Client) error {
-	c.createClientSocket()
 	response, err := sendDoneSendingBets(c.config.ID, c.conn)
 	if response.MessageType == ErrMessage {
 		err = errors.New("Error al enviar el mensaje de done")
 	}
-	c.conn.Close()
 	return err
 }
 
@@ -161,10 +156,8 @@ func begginWinners(c *Client) ([]ClientBet, error) {
 			shutdown(c)
 		default:
 		}
-		c.createClientSocket()
 		new_response, err := sendRequestWinners(c.config.ID, c.conn)
 		response = new_response
-		c.conn.Close()
 		if err != nil || response.MessageType == ErrMessage {
 			log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
 				c.config.ID,
